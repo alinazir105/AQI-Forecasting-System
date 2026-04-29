@@ -40,7 +40,7 @@ def get_aqi_category(pm25: float) -> dict:
     else:
         return {"aqi_index": 5, "category": "Very Poor"}
 
-
+# Root endpoint providing basic info about the API and available endpoints
 @app.get("/")
 def root():
     return {
@@ -52,12 +52,12 @@ def root():
         }
     }
 
-
+# Simple health check endpoint to verify the API is running
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
+# This endpoint returns the latest air quality data for Karachi, along with the AQI category based on PM2.5 levels.
 @app.get("/current")
 def get_current():
     history = load_history()
@@ -89,6 +89,7 @@ def get_current():
         "source": str(latest.get("source", "OpenWeather")),
     }
 
+# This endpoint provides a 3-day PM2.5 forecast for Karachi, along with AQI categories.
 @app.get("/forecast")
 def get_forecast():
     history = load_history()
