@@ -1,0 +1,15 @@
+name: Hourly AQI Collection
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger data collection
+        run: |
+          curl -X POST \
+            "https://aqi-forecasting-system-production.up.railway.app/collect?api_key=${{ secrets.COLLECT_SECRET }}"

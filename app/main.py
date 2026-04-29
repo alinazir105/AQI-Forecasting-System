@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-from app.services.history_store import load_history
 from app.services.forecast_service import forecast_next_days
+from app.services.history_store import append_record, load_history
+from app.services.api_fetcher import fetch_current_air_quality
+from fastapi import HTTPException
+
+import os
 
 app = FastAPI(
     title="Karachi AQI Forecasting API",
@@ -113,3 +117,15 @@ def get_forecast():
         "city": "Karachi",
         "forecast": enriched
     }
+    
+
+
+@app.post("/collect")
+def collect(api_key: str = ""):
+    # Simple key check so random people can't spam your endpoint
+    if api_key != os.getenv("COLLECT_SECRET"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    record = fetch_current_air_quality()
+    append_record(record)
+    return {"status": "ok", "datetime": record["datetime"], "pm25": record["pm25"]}
