@@ -13,7 +13,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://your-deployed-frontend.com"],
+    allow_origins=["http://localhost:5173", "https://aqi-forecasting-system.vercel.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

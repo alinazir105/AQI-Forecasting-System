@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL
 
 const AQI_CONFIG = {
   1: { label: "Good",      bg: "#d1fae5", text: "#065f46", border: "#6ee7b7", dot: "#10b981" },
