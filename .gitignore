@@ -1,1 +1,6 @@
 anaconda_projects/
+.ipynb_checkpoints/
+venv/
+.env
+node_modules/
+__pycache__/
