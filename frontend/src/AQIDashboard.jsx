@@ -62,6 +62,43 @@ function Spinner() {
   );
 }
 
+function HazardAlert({ current, forecast }) {
+  const messages = [];
+
+  if (current?.aqi_index >= 4) {
+    messages.push(`Current PM2.5 is ${current.pm25} µg/m³ — ${current.category} air quality right now.`);
+  }
+
+  forecast.forEach(day => {
+    if (day.aqi_index >= 4) {
+      messages.push(`${day.date}: Forecast shows ${day.predicted_pm25} µg/m³ — ${day.category}.`);
+    }
+  });
+
+  if (messages.length === 0) return null;
+
+  return (
+    <div style={{
+      background: "#fef2f2", border: "1.5px solid #fca5a5",
+      borderRadius: 16, padding: "16px 20px",
+      display: "flex", gap: 14, alignItems: "flex-start"
+    }}>
+      <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+      <div>
+        <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 600, color: "#7f1d1d" }}>
+          Air Quality Alert
+        </p>
+        {messages.map((msg, i) => (
+          <p key={i} style={{ margin: "2px 0", fontSize: 13, color: "#991b1b" }}>{msg}</p>
+        ))}
+        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#b91c1c", opacity: 0.8 }}>
+          Limit outdoor activity. Sensitive groups (children, elderly, respiratory conditions) should stay indoors.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function CurrentCard({ data }) {
   if (!data || data.error) return null;
   const cfg = AQI_CONFIG[data.aqi_index] || AQI_CONFIG[3];
@@ -230,6 +267,7 @@ export default function AQIDashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
             <CurrentCard data={current} />
+            <HazardAlert current={current} forecast={forecast} />
 
             <div>
               <p style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em" }}>
