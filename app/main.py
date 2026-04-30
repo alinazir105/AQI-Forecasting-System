@@ -5,6 +5,7 @@ from app.services.forecast_service import forecast_next_days
 from app.services.history_store import append_record, load_history
 from app.services.api_fetcher import fetch_current_air_quality
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 
 import os
 
@@ -129,3 +130,14 @@ def collect(api_key: str = ""):
     record = fetch_current_air_quality()
     append_record(record)
     return {"status": "ok", "datetime": record["datetime"], "pm25": record["pm25"]}
+
+
+@app.get("/download-history")
+def download_history(api_key: str = ""):
+    if api_key != os.getenv("COLLECT_SECRET"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return FileResponse(
+        "data/api_history.csv",
+        media_type="text/csv",
+        filename="api_history.csv"
+    )
