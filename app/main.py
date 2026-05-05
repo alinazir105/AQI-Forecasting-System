@@ -180,3 +180,18 @@ def retrain(api_key: str = ""):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@app.get("/debug-forecast")
+def debug_forecast():
+    history = load_history()
+    df_feat = create_features(history)
+    latest = df_feat.iloc[-1:]
+    
+    feature_names_loaded = joblib.load("models/features.pkl")
+    
+    return {
+        "last_date_in_history": str(df_feat["date"].max() if "date" in df_feat.columns else "no date col"),
+        "last_feature_row": latest[feature_names_loaded].to_dict(orient="records")[0],
+        "total_feature_rows": len(df_feat),
+    }
