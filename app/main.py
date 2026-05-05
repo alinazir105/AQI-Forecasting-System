@@ -6,7 +6,11 @@ from app.services.history_store import append_record, load_history
 from app.services.api_fetcher import fetch_current_air_quality
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from app.services.feature_pipeline import create_features
+import joblib
 import os
 
 app = FastAPI(
@@ -141,3 +145,38 @@ def download_history(api_key: str = ""):
         media_type="text/csv",
         filename="api_history.csv"
     )
+    
+
+@app.post("/retrain")
+def retrain(api_key: str = ""):
+    if api_key != os.getenv("COLLECT_SECRET"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        history = load_history()
+
+        if len(history) < 100:
+            return {"status": "skipped", "reason": "Not enough data to retrain"}
+
+        df_feat = create_features(history)
+
+        feature_names = joblib.load("models/features.pkl")
+        X = df_feat[feature_names]
+        y = df_feat["pm25"]
+
+        new_model = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", Ridge(alpha=1.0))
+        ])
+        new_model.fit(X, y)
+
+        joblib.dump(new_model, "models/Ridge-Regression-Pipeline.pkl")
+
+        return {
+            "status": "ok",
+            "rows_trained": len(df_feat),
+            "features": feature_names
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
