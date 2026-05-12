@@ -10,47 +10,59 @@ model = joblib.load(MODEL_PATH)
 feature_names = joblib.load(FEATURES_PATH)
 
 
-def predict_next(df: pd.DataFrame) -> float:
-    df_feat = create_features(df)
-    latest = df_feat.iloc[-1:][feature_names]
-    prediction = model.predict(latest)
-    return float(prediction[0])
-
-
 def forecast_next_days(df: pd.DataFrame, days: int = 3) -> list[dict]:
-    history = df.copy()
+    # Build features once from real history
+    df_feat = create_features(df)
+
+    # Get last known raw pollutant values to carry forward
+    last_raw = df.sort_values("datetime").iloc[-1]
+
     forecasts = []
 
-    # Carry forward last known pollutant values into forecasted rows
-    last_known = history.iloc[-1]
+    for i in range(days):
+        last_row = df_feat.iloc[-1]
 
-    for _ in range(days):
-        prediction = predict_next(history)
+        # Predict using current feature row
+        latest_features = df_feat.iloc[-1:][feature_names]
+        prediction = float(model.predict(latest_features)[0])
 
-        last_date = pd.to_datetime(history["date"]).max().date()
+        # Calculate next date
+        last_date = last_row["date"]
+        if hasattr(last_date, 'date'):
+            last_date = last_date.date()
         next_date = last_date + timedelta(days=1)
 
-        new_row = {
-            "datetime": pd.Timestamp(next_date, tz="UTC"),
+        # Manually build next feature row by shifting lags
+        next_row = {
             "date": next_date,
+            "datetime": pd.Timestamp(next_date, tz="UTC"),
             "pm25": prediction,
-            "aqi": None,
-            "source": "Forecasted",
-            "pm10": last_known.get("pm10"),
-            "co":   last_known.get("co"),
-            "no":   last_known.get("no"),
-            "no2":  last_known.get("no2"),
-            "o3":   last_known.get("o3"),
-            "so2":  last_known.get("so2"),
-            "nh3":  last_known.get("nh3"),
-            "lat":  last_known.get("lat"),
-            "lon":  last_known.get("lon"),
+            "pm10": float(last_raw.get("pm10") or 0),
+            "co":   float(last_raw.get("co") or 0),
+            "no2":  float(last_raw.get("no2") or 0),
+            "so2":  float(last_raw.get("so2") or 0),
+            "nh3":  float(last_raw.get("nh3") or 0),
+            # Shift pm25 lags forward
+            "lag_1": prediction,
+            "lag_2": float(last_row["lag_1"]),
+            "lag_3": float(last_row["lag_2"]),
+            "lag_7": float(last_row["lag_3"]),
+            # Update rolling averages
+            "pm25_rolling_7":  float((last_row["pm25_rolling_7"] * 6 + prediction) / 7),
+            "pm25_rolling_14": float((last_row["pm25_rolling_14"] * 13 + prediction) / 14),
+            "month": pd.Timestamp(next_date).month,
+            # Carry forward pollutant lags
+            "pm10_lag_1": float(last_raw.get("pm10") or 0),
+            "co_lag_1":   float(last_raw.get("co") or 0),
+            "no2_lag_1":  float(last_raw.get("no2") or 0),
+            "so2_lag_1":  float(last_raw.get("so2") or 0),
+            "nh3_lag_1":  float(last_raw.get("nh3") or 0),
         }
 
-        history = pd.concat([history, pd.DataFrame([new_row])], ignore_index=True)
-
-        # Update so next iteration uses the latest appended row
-        last_known = pd.Series(new_row)
+        df_feat = pd.concat(
+            [df_feat, pd.DataFrame([next_row])],
+            ignore_index=True
+        )
 
         forecasts.append({
             "date": next_date.isoformat(),

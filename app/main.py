@@ -195,3 +195,28 @@ def debug_forecast():
         "last_feature_row": latest[feature_names_loaded].to_dict(orient="records")[0],
         "total_feature_rows": len(df_feat),
     }
+    
+    
+@app.get("/debug-forecast2")
+def debug_forecast2():
+    history = load_history()
+    df_feat = create_features(history)
+    
+    # Check what happens on step 2 of recursion
+    from datetime import timedelta
+    import pandas as pd
+    
+    pred1 = float(__import__('joblib').load("models/Ridge-Regression-Pipeline.pkl").predict(
+        df_feat.iloc[-1:][__import__('joblib').load("models/features.pkl")]
+    )[0])
+    
+    last_date = df_feat["date"].max()
+    next_date = last_date + timedelta(days=1) if hasattr(last_date, 'days') else pd.to_datetime(last_date).date() + timedelta(days=1)
+    
+    return {
+        "last_date_in_features": str(last_date),
+        "last_date_type": str(type(last_date)),
+        "next_date": str(next_date),
+        "pred1": pred1,
+        "feature_row": df_feat.iloc[-1:][__import__('joblib').load("models/features.pkl")].to_dict(orient="records")[0]
+    }
