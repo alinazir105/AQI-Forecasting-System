@@ -132,9 +132,20 @@ function CurrentCard({ data }) {
 
 function ForecastCard({ day, index }) {
   const cfg = AQI_CONFIG[day.aqi_index] || AQI_CONFIG[3];
-  const date = new Date(day.date);
-  const label = index === 0 ? "Tomorrow"
-    : index === 1 ? "In 2 days"
+  const date = new Date(day.date + "T00:00:00"); // force local date parsing
+  
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0]; // "2026-05-24"
+  const cardDateStr = day.date; // already "2026-05-24"
+
+  const todayDate = new Date(todayStr + "T12:00:00");
+  const cardDate = new Date(cardDateStr + "T12:00:00");
+
+  const diffDays = Math.round((cardDate - todayDate) / (1000 * 60 * 60 * 24));
+  
+  const label = diffDays === 0 ? "Today"
+    : diffDays === 1 ? "Tomorrow"
+    : diffDays === 2 ? "In 2 days"
     : date.toLocaleDateString("en-PK", { weekday: "long" });
 
   return (
